@@ -1,7 +1,7 @@
 # Base images are pinned by digest; Dependabot keeps the digests current.
 # The app builds once on the build machine's platform; the final stage only
 # copies files, so multi-arch builds need no emulation.
-FROM --platform=$BUILDPLATFORM node:26-alpine@sha256:40cd011b55415bc894e45b02fdd5a5dfde056921b7d23a64c74f80497af48797 AS build
+FROM --platform=$BUILDPLATFORM node:26-alpine@sha256:c6ad9e9c1d80f6eb607c26b4b0a132ff7a2344fad1c78ea3baa2a7d4c8de6d94 AS build
 WORKDIR /app
 # Corepack fetches the pnpm release pinned, with its hash, in package.json.
 # Node 25 and later no longer bundle Corepack, so it comes from npm.
