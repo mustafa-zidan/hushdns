@@ -6,6 +6,13 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/src/target \
     cargo build --release --locked \
     && cp target/release/hushdns /usr/local/bin/hushdns
+# Docker lets unprivileged users bind ports below 1024 inside the container,
+# Podman does not. A permitted-only file capability, which the server raises
+# itself at startup, covers both. Without the effective bit the binary still
+# starts where the capability is dropped, as in the Helm chart.
+RUN apt-get update && apt-get install -y --no-install-recommends libcap2-bin \
+    && setcap cap_net_bind_service=+p /usr/local/bin/hushdns \
+    && getcap /usr/local/bin/hushdns
 
 FROM gcr.io/distroless/cc-debian13:nonroot@sha256:3ee00291cf386ec52a552e6a858d555debd74776eb4bfa53fa3df2cd6677515e
 LABEL org.opencontainers.image.title="hushdns" \
@@ -15,8 +22,6 @@ LABEL org.opencontainers.image.title="hushdns" \
 COPY --from=builder /usr/local/bin/hushdns /usr/local/bin/hushdns
 COPY config/hushdns.toml /etc/hushdns/hushdns.toml
 ENV HUSHDNS_CONFIG=/etc/hushdns/hushdns.toml
-# Docker lets unprivileged users bind ports below 1024 inside the container,
-# so the server can listen on 53 without running as root.
 EXPOSE 53/udp 53/tcp 853/tcp 443/tcp
 USER nonroot
 ENTRYPOINT ["/usr/local/bin/hushdns"]

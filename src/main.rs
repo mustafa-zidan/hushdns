@@ -6,7 +6,7 @@ use std::time::Duration;
 use anyhow::Result;
 use clap::{Parser, Subcommand, ValueEnum};
 use tokio_rustls::TlsAcceptor;
-use tracing::info;
+use tracing::{info, warn};
 use tracing_subscriber::EnvFilter;
 
 use hushdns::api::{self, ApiState};
@@ -64,8 +64,39 @@ enum LogFormat {
     Json,
 }
 
-#[tokio::main]
-async fn main() -> Result<()> {
+fn main() -> Result<()> {
+    // Capabilities are per thread, so this runs before the runtime starts its
+    // workers, which then inherit the raised set.
+    let bind_cap = raise_bind_capability();
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()?
+        .block_on(run(bind_cap))
+}
+
+/// The image gives the binary CAP_NET_BIND_SERVICE as a permitted-only file
+/// capability. Docker lets any user bind low ports, but Podman does not, so
+/// the server moves the capability into its effective set itself. Permitted
+/// only, because a binary with the effective bit fails to exec when the
+/// capability is dropped, as the Helm chart does; there the sysctl applies.
+#[cfg(target_os = "linux")]
+fn raise_bind_capability() -> Option<String> {
+    use caps::{CapSet, Capability};
+    let cap = Capability::CAP_NET_BIND_SERVICE;
+    match caps::has_cap(None, CapSet::Permitted, cap) {
+        Ok(true) => caps::raise(None, CapSet::Effective, cap)
+            .err()
+            .map(|e| format!("raising CAP_NET_BIND_SERVICE: {e}")),
+        _ => None,
+    }
+}
+
+#[cfg(not(target_os = "linux"))]
+fn raise_bind_capability() -> Option<String> {
+    None
+}
+
+async fn run(bind_cap: Option<String>) -> Result<()> {
     let args = Args::parse();
     match &args.command {
         Some(Command::HashPassword) => return hash_password(),
@@ -84,6 +115,9 @@ async fn main() -> Result<()> {
             .flatten_event(true)
             .with_current_span(false)
             .init(),
+    }
+    if let Some(error) = bind_cap {
+        warn!(%error, "binding ports below 1024 may fail");
     }
 
     let config = match &args.config {

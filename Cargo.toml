@@ -46,6 +46,11 @@ tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "json"] }
 url = "2.5.8"
 
+# Raises CAP_NET_BIND_SERVICE at startup when the binary carries it as a file
+# capability, so the non-root image can bind port 53 without the sysctl.
+[target.'cfg(target_os = "linux")'.dependencies]
+caps = "0.5.6"
+
 [dev-dependencies]
 rcgen = "0.14.10"
 reqwest = { version = "0.13.5", default-features = false, features = ["json", "rustls"] }

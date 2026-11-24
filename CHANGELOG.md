@@ -15,6 +15,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 - hushdns is now licensed under the GNU General Public License, version 3 or later (GPL-3.0-or-later), instead of MIT OR Apache-2.0. Releases 0.0.1 and 0.0.2 stay available under MIT OR Apache-2.0. The dashboard footer links to the license and the source code.
 
+### Fixed
+
+- The image binds port 53 under Podman. It relied on Docker letting any user bind ports below 1024, which Podman does not, so the server exited with "Permission denied". The binary now carries `CAP_NET_BIND_SERVICE` as a permitted file capability and raises it at startup. Where the capability is dropped, as in the Helm chart, it starts as before and relies on the sysctl.
+
 ## [0.0.2] - 2026-10-28
 
 ### Added
