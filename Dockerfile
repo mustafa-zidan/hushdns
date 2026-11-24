@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends libcap2-bin \
     && setcap cap_net_bind_service=+p /usr/local/bin/hushdns \
     && getcap /usr/local/bin/hushdns
 
-FROM gcr.io/distroless/cc-debian13:nonroot@sha256:3ee00291cf386ec52a552e6a858d555debd74776eb4bfa53fa3df2cd6677515e
+FROM gcr.io/distroless/cc-debian13:nonroot@sha256:532c7a94f9e96ba9db75eb9388f4227751131c7cb0a411d1a8521af4096135de
 LABEL org.opencontainers.image.title="hushdns" \
       org.opencontainers.image.description="An ad-blocking, privacy-focused DNS server" \
       org.opencontainers.image.source="https://github.com/mustafa-zidan/hushdns" \
